@@ -1325,62 +1325,32 @@
                 return;
             }
             
-            // 添加3秒自动消失定时器
-            let autoHideTimeout = setTimeout(function() {
+            // 添加1秒自动消失定时器
+            const autoHideTimeout = setTimeout(function() {
+                if (!deleteConfirm || !deleteConfirm.parentNode) return;
+                
                 deleteConfirm.style.opacity = '0';
                 deleteConfirm.style.transform = 'translateX(10px)';
+                
                 // 动画完成后移除元素
                 setTimeout(function() {
-                    if (deleteBtn) {
+                    if (deleteBtn && deleteBtn.style) {
                         deleteBtn.style.display = 'block';
                     }
                     if (deleteConfirm && deleteConfirm.parentNode) {
                         deleteConfirm.remove();
                     }
                 }, 300);
-            }, 3000); // 3秒后自动消失
+            }, 1000); // 1秒后自动消失
             
             confirmBtn.addEventListener('click', function() {
-                // 清除自动消失定时器
-                if (autoHideTimeout) {
-                    clearTimeout(autoHideTimeout);
-                }
+                clearTimeout(autoHideTimeout);
                 confirmDelete(index);
             });
             
             cancelBtn.addEventListener('click', function() {
-                // 清除自动消失定时器
-                if (autoHideTimeout) {
-                    clearTimeout(autoHideTimeout);
-                }
+                clearTimeout(autoHideTimeout);
                 cancelDelete(deleteConfirm, deleteBtn);
-            });
-            
-            // 添加鼠标事件监听器，实现鼠标离开时淡出消失
-            let hideTimeout;
-            
-            deleteConfirm.addEventListener('mouseenter', function() {
-                // 鼠标进入时清除隐藏定时器
-                if (hideTimeout) {
-                    clearTimeout(hideTimeout);
-                }
-            });
-            
-            deleteConfirm.addEventListener('mouseleave', function() {
-                // 鼠标离开时设置定时器，延迟淡出消失
-                hideTimeout = setTimeout(function() {
-                    deleteConfirm.style.opacity = '0';
-                    deleteConfirm.style.transform = 'translateX(10px)';
-                    // 动画完成后移除元素
-                    setTimeout(function() {
-                        if (deleteBtn) {
-                            deleteBtn.style.display = 'block';
-                        }
-                        if (deleteConfirm && deleteConfirm.parentNode) {
-                            deleteConfirm.remove();
-                        }
-                    }, 300);
-                }, 300);
             });
         }
 
