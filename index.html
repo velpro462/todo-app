@@ -535,6 +535,7 @@
             position: relative;
             max-height: 400px;
             overflow-y: auto;
+            transition: all 0.3s ease;
         }
 
         .todo-item {
@@ -1134,8 +1135,27 @@
         }
 
         function goToPage(page) {
-            currentPage = page;
-            renderTodos();
+            const todoList = document.getElementById('todoList');
+            
+            // 添加淡出动画
+            todoList.style.opacity = '0';
+            todoList.style.transform = 'translateY(-5px)';
+            
+            // 等待动画完成后切换页面内容
+            setTimeout(() => {
+                currentPage = page;
+                renderTodos();
+                
+                // 重置新内容的初始状态
+                todoList.style.opacity = '0';
+                todoList.style.transform = 'translateY(5px)';
+                
+                // 触发动画显示新内容
+                requestAnimationFrame(() => {
+                    todoList.style.opacity = '1';
+                    todoList.style.transform = 'translateY(0)';
+                });
+            }, 150);
         }
 
         function confirmClearAll() {
