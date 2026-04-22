@@ -1043,10 +1043,10 @@
             list.innerHTML = paginatedTodos.map((todo, index) => {
                 const todoIndex = todos.indexOf(todo);
                 return `
-                    <div class="todo-item">
+                    <div class="todo-item" data-index="${todoIndex}">
                         <div class="todo-checkbox ${todo.completed ? 'checked' : ''}" onclick="toggleTodo(${todoIndex})"></div>
                         <div class="todo-content ${todo.completed ? 'completed' : ''}" onclick="toggleTodo(${todoIndex})">${todo.text}</div>
-                        <button class="delete-btn" onclick="deleteTodo(${todoIndex})">×</button>
+                        <button class="delete-btn" onclick="deleteTodo(${todoIndex}, event)">×</button>
                     </div>
                 `;
             }).join('');
@@ -1198,47 +1198,153 @@
             updateStats();
         }
 
-        function deleteTodo(index) {
-            const todoItem = document.querySelectorAll('.todo-item')[index];
-            if (!todoItem) return;
-
+        function deleteTodo(index, event) {
+            // 阻止事件冒泡
+            if (event) event.stopPropagation();
+            
+            // 通过事件目标找到对应的todo-item
+            let todoItem = null;
+            if (event) {
+                // 从删除按钮向上查找todo-item
+                let currentElement = event.target;
+                while (currentElement && !currentElement.classList.contains('todo-item')) {
+                    currentElement = currentElement.parentElement;
+                }
+                todoItem = currentElement;
+            }
+            
+            // 如果通过事件找不到，尝试通过data-index查找
+            if (!todoItem) {
+                const todoItems = document.querySelectorAll('.todo-item');
+                for (let i = 0; i < todoItems.length; i++) {
+                    const item = todoItems[i];
+                    if (item.getAttribute('data-index') == index) {
+                        todoItem = item;
+                        break;
+                    }
+                }
+            }
+            
+            if (!todoItem) {
+                console.error('找不到对应的todo-item:', index);
+                return;
+            }
+            
             if (todoItem.querySelector('.delete-confirm')) {
                 return;
             }
-
+            
             const deleteConfirm = document.createElement('div');
             deleteConfirm.className = 'delete-confirm';
             deleteConfirm.innerHTML = `
                 <button class="confirm-delete-btn">确认删除</button>
                 <button class="cancel-delete-btn">我再想想</button>
             `;
-
+            
             const deleteBtn = todoItem.querySelector('.delete-btn');
-            if (!deleteBtn) return;
-
+            if (!deleteBtn) {
+                console.error('找不到delete-btn');
+                return;
+            }
+            
             deleteBtn.style.display = 'none';
-
-            const rect = deleteBtn.getBoundingClientRect();
-            const todoRect = todoItem.getBoundingClientRect();
-
+            
+            // 调整位置计算，确保对话框完整显示在删除按钮旁边
             deleteConfirm.style.position = 'absolute';
-            deleteConfirm.style.right = (todoRect.right - rect.right + 10) + 'px';
-            deleteConfirm.style.top = (rect.top - todoRect.top) + 'px';
-            deleteConfirm.style.zIndex = '100';
+            deleteConfirm.style.right = '40px'; // 增加右边距，确保不被截断
+            deleteConfirm.style.top = '10px'; // 固定在顶部，避免垂直居中导致的问题
+            deleteConfirm.style.zIndex = '1000';
             deleteConfirm.style.whiteSpace = 'nowrap';
-
+            deleteConfirm.style.padding = '8px 12px'; // 减少内边距，缩小上下高度
+            deleteConfirm.style.width = 'auto'; // 自动宽度
+            deleteConfirm.style.minWidth = '160px'; // 调整最小宽度
+            deleteConfirm.style.maxWidth = '220px'; // 调整最大宽度
+            deleteConfirm.style.backgroundColor = 'white';
+            deleteConfirm.style.border = '1px solid #d4c8ba';
+            deleteConfirm.style.borderRadius = '6px'; // 减小圆角
+            deleteConfirm.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)'; // 减小阴影
+            deleteConfirm.style.display = 'flex';
+            deleteConfirm.style.gap = '8px'; // 调整按钮间距
+            deleteConfirm.style.alignItems = 'center';
+            deleteConfirm.style.justifyContent = 'center';
+            deleteConfirm.style.overflow = 'visible'; // 确保内容不被截断
+            deleteConfirm.style.opacity = '0'; // 初始隐藏
+            deleteConfirm.style.transform = 'translateX(10px)'; // 初始位置偏右
+            deleteConfirm.style.transition = 'all 0.3s ease'; // 添加过渡动画
+            
             todoItem.style.position = 'relative';
             todoItem.appendChild(deleteConfirm);
-
+            
+            // 触发动画，显示对话框
+            setTimeout(() => {
+                deleteConfirm.style.opacity = '1';
+                deleteConfirm.style.transform = 'translateX(0)';
+            }, 10);
+            
             const confirmBtn = deleteConfirm.querySelector('.confirm-delete-btn');
             const cancelBtn = deleteConfirm.querySelector('.cancel-delete-btn');
-
+            
+            if (!confirmBtn || !cancelBtn) {
+                console.error('找不到确认或取消按钮');
+                return;
+            }
+            
+            // 添加3秒自动消失定时器
+            let autoHideTimeout = setTimeout(function() {
+                deleteConfirm.style.opacity = '0';
+                deleteConfirm.style.transform = 'translateX(10px)';
+                // 动画完成后移除元素
+                setTimeout(function() {
+                    if (deleteBtn) {
+                        deleteBtn.style.display = 'block';
+                    }
+                    if (deleteConfirm && deleteConfirm.parentNode) {
+                        deleteConfirm.remove();
+                    }
+                }, 300);
+            }, 3000); // 3秒后自动消失
+            
             confirmBtn.addEventListener('click', function() {
+                // 清除自动消失定时器
+                if (autoHideTimeout) {
+                    clearTimeout(autoHideTimeout);
+                }
                 confirmDelete(index);
             });
-
+            
             cancelBtn.addEventListener('click', function() {
+                // 清除自动消失定时器
+                if (autoHideTimeout) {
+                    clearTimeout(autoHideTimeout);
+                }
                 cancelDelete(deleteConfirm, deleteBtn);
+            });
+            
+            // 添加鼠标事件监听器，实现鼠标离开时淡出消失
+            let hideTimeout;
+            
+            deleteConfirm.addEventListener('mouseenter', function() {
+                // 鼠标进入时清除隐藏定时器
+                if (hideTimeout) {
+                    clearTimeout(hideTimeout);
+                }
+            });
+            
+            deleteConfirm.addEventListener('mouseleave', function() {
+                // 鼠标离开时设置定时器，延迟淡出消失
+                hideTimeout = setTimeout(function() {
+                    deleteConfirm.style.opacity = '0';
+                    deleteConfirm.style.transform = 'translateX(10px)';
+                    // 动画完成后移除元素
+                    setTimeout(function() {
+                        if (deleteBtn) {
+                            deleteBtn.style.display = 'block';
+                        }
+                        if (deleteConfirm && deleteConfirm.parentNode) {
+                            deleteConfirm.remove();
+                        }
+                    }, 300);
+                }, 300);
             });
         }
 
