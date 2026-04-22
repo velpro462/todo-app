@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>待办事项</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Cormorant:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/xiawuwenkai@1.0.0/dist/xiawuwenkai.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: '霞鹜文楷', '楷体', 'Cormorant', serif;
+        }
+
+        body {
+            background: #f5f0eb;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+            font-size: 16px;
+        }
+
+        .spinning-ring {
+            position: fixed;
+            bottom: 40px;
+            left: 40px;
+            width: 180px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: spin 20s linear infinite;
+            z-index: 100;
+        }
+
+        .ring-char {
+            position: absolute;
+            font-size: 11px;
+            font-weight: 600;
+            color: #8a7a6a;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            transform-origin: center;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .container {
+            display: flex;
+            min-height: calc(100vh - 40px);
+            max-width: 1100px;
+            margin: 0 auto;
+            gap: 20px;
+            position: relative;
+        }
+
+        .sidebar {
+            flex: 0 0 150px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            position: relative;
+            height: calc(100vh - 40px);
+            padding-top: 100px;
+            padding-left: 20px;
+        }
+
+        .sidebar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 1px;
+            background: rgba(139, 69, 19, 0.2);
+        }
+
+        .sidebar-content {
+            writing-mode: horizontal-tb;
+            text-orientation: mixed;
+            position: relative;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sidebar-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            letter-spacing: 8px;
+            position: relative;
+            transform: translateX(15px);
+            margin-bottom: 8px;
+        }
+
+        .sidebar-subtitle {
+            font-size: 24px;
+            font-weight: 600;
+            color: #666;
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            letter-spacing: 8px;
+            position: relative;
+            transform: translateX(-15px);
+            margin-bottom: 40px;
+        }
+
+        .sidebar-pagination {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 16px;
+            margin-top: 150px;
+            padding-right: 5px;
+        }
+
+        .sidebar-page-btn {
+            width: 32px;
+            height: 32px;
+            border: 2px solid #d4c8ba;
+            background: #f8f3e9;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .sidebar-page-btn:hover {
+            background: #e8e0d5;
+            transform: scale(1.1);
+            border-color: #b8860b;
+        }
+
+        .sidebar-page-btn.active {
+            background: #b8860b;
+            color: white;
+            border-color: #b8860b;
+        }
+
+        .sidebar-page-btn.ellipsis {
+            background: transparent;
+            border: none;
+            cursor: default;
+            font-size: 16px;
+        }
+
+        .sidebar-page-btn.ellipsis:hover {
+            background: transparent;
+            transform: none;
+            border-color: #d4c8ba;
+        }
+
+        .main-area {
+            flex: 1;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            padding-top: 20px;
+        }
+
+        .todo-module {
+            flex: 3;
+            position: relative;
+            transform: rotate(-0.5deg);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+
+        .todo-section {
+            background: white;
+            border: 1px solid #e8d5b7;
+            border-radius: 0;
+            padding: 30px;
+            position: relative;
+            min-height: 600px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        .todo-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 28px,
+                rgba(0,0,0,0.02) 28px,
+                rgba(0,0,0,0.02) 29px
+            );
+            pointer-events: none;
+        }
+
+        .right-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .summary-module {
+            position: relative;
+            transform: rotate(1deg) scale(0.95);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            z-index: 5;
+            margin-top: 40px;
+        }
+
+        .quote-module {
+            position: relative;
+            transform: rotate(-0.5deg);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            z-index: 3;
+            background: #e8e0d5;
+            border: 1px solid #d4c8ba;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .quote-module .daily-quote {
+            padding: 0;
+        }
+
+        .summary-card {
+            background: #e8e0d5;
+            border: 1px solid #d4c8ba;
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            min-height: 300px;
+        }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            width: 4px;
+            height: 4px;
+            background: #d4c8ba;
+            border-radius: 50%;
+            box-shadow: 15px 0 0 #d4c8ba, 30px 0 0 #d4c8ba,
+                        140px 0 0 #d4c8ba, 155px 0 0 #d4c8ba, 170px 0 0 #d4c8ba;
+        }
+
+        .date-display {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #d4c8ba;
+            margin-top: 10px;
+        }
+
+        .date-display h3 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            letter-spacing: 1px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #d4c8ba;
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-item .label {
+            font-size: 16px;
+            font-weight: 700;
+            color: #5a5a5a;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-item .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+        }
+
+        .summary-item .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: #d4c8ba;
+            border-radius: 4px;
+            margin: 0 16px;
+            overflow: hidden;
+        }
+
+        .summary-item .progress {
+            height: 100%;
+            background: #b8860b;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .daily-quote {
+            margin-top: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .quote-sticky {
+            background: #DADCD9;
+            border: 1px solid #c0c0c0;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            position: relative;
+            transform: rotate(-1deg);
+        }
+
+        .quote-sticky::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border-radius: 50%;
+            box-shadow:
+                0 4px 8px rgba(0,0,0,0.3),
+                inset 0 2px 4px rgba(255,255,255,0.3),
+                inset 0 -2px 4px rgba(0,0,0,0.3);
+            z-index: 1;
+        }
+
+        .quote-sticky::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            right: 24px;
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            border-radius: 50%;
+            box-shadow: inset 0 1px 2px rgba(255,255,255,0.5);
+            z-index: 2;
+        }
+
+        .quote-label {
+            font-size: 16px;
+            font-weight: 700;
+            color: #666;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .quote-content {
+            font-size: 16px;
+            font-weight: 600;
+            color: #555;
+            font-family: '霞鹜文楷', '楷体', serif;
+            line-height: 1.6;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        header h1 {
+            color: #333;
+            font-size: 42px;
+            font-weight: 600;
+            font-family: '霞鹜文楷', '楷体', serif;
+            font-style: normal;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        header h1::before,
+        header h1::after {
+            content: '✦';
+            color: #b8860b;
+            font-size: 24px;
+            font-weight: normal;
+        }
+
+        .add-form {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .add-form input {
+            flex: 1;
+            padding: 16px 24px;
+            border: 2px solid #d4c8ba;
+            border-radius: 20px;
+            font-size: 16px;
+            font-family: '霞鹜文楷', '楷体', 'Cormorant', serif;
+            outline: none;
+            background: transparent;
+            transition: all 0.3s ease;
+            color: #333;
+        }
+
+        .add-form input:focus {
+            border-color: #8a9a8a;
+            box-shadow: 0 0 0 3px rgba(138, 154, 134, 0.1);
+        }
+
+        .add-form input::placeholder {
+            color: #999;
+            font-style: normal;
+        }
+
+        .add-btn {
+            padding: 16px 32px;
+            background: #8a9a8a;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: '霞鹜文楷', '楷体', serif;
+            letter-spacing: 1px;
+        }
+
+        .add-btn:hover {
+            background: #7a8a7a;
+        }
+
+        .clear-all-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .clear-all-btn {
+            padding: 8px 16px;
+            background: #f8f3e9;
+            border: 2px solid #d4c8ba;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .clear-all-btn:hover {
+            background: #e8e0d5;
+            border-color: #b8860b;
+            color: #b8860b;
+        }
+
+        .filter-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 2px solid #d4c8ba;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-btn:hover {
+            background: #e8e0d5;
+            border-color: #b8860b;
+        }
+
+        .filter-btn.active {
+            background: #b8860b;
+            border-color: #b8860b;
+            color: white;
+        }
+
+        .todo-list {
+            position: relative;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0e8e0;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .todo-item:hover {
+            background: rgba(180, 83, 9, 0.1);
+            border-left: 4px solid #b45309;
+        }
+
+        .todo-item:last-child {
+            border-bottom: none;
+        }
+
+        .todo-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #d4c8ba;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        .todo-checkbox.checked {
+            background: #b45309;
+            border-color: #b45309;
+        }
+
+        .todo-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .todo-content {
+            flex: 1;
+            font-size: 18px;
+            color: #333;
+            font-family: '霞鹜文楷', '楷体', 'Cormorant', serif;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            line-height: 1.6;
+            word-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .todo-content.completed {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #d4c8ba;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            color: #b45309;
+            background: rgba(180, 83, 9, 0.1);
+        }
+
+        .delete-confirm {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            transform: none !important;
+            background: white;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            border: 1px solid #d4c8ba;
+        }
+
+        .delete-confirm * {
+            transform: none !important;
+        }
+
+        .confirm-delete-btn {
+            padding: 4px 8px;
+            background: #b45309;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .confirm-delete-btn:hover {
+            background: #92400e;
+        }
+
+        .cancel-delete-btn {
+            padding: 4px 8px;
+            background: transparent;
+            color: #666;
+            border: 1px solid #d4c8ba;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .cancel-delete-btn:hover {
+            background: #f8f3e9;
+            border-color: #b8860b;
+            color: #b8860b;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 40px;
+            color: #999;
+            position: relative;
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            font-family: '霞鹜文楷', '楷体', 'Cormorant', serif;
+            font-style: italic;
+            line-height: 1.6;
+        }
+
+        .archive-notification {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            background: white;
+            border: 1px solid #e8d5b7;
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            min-width: 280px;
+        }
+
+        .archive-notification.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .archive-message {
+            font-size: 14px;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .archive-progress {
+            width: 100%;
+            height: 6px;
+            background: #e8d5b7;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .archive-progress-bar {
+            height: 100%;
+            background: #b45309;
+            border-radius: 3px;
+            transition: width 0.1s linear;
+        }
+
+        .archive-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .undo-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: 2px solid #b45309;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #b45309;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .undo-btn:hover {
+            background: #b45309;
+            color: white;
+        }
+
+        @keyframes checkmark {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .checkmark {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+                font-size: 14px;
+            }
+
+            .container {
+                flex-direction: column;
+                min-height: calc(100vh - 32px);
+                gap: 16px;
+            }
+
+            .sidebar {
+                flex: none;
+                height: 60px;
+                width: 100%;
+            }
+
+            .sidebar::after {
+                display: none;
+            }
+
+            .sidebar-content {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 16px;
+            }
+
+            .sidebar-title,
+            .sidebar-subtitle {
+                margin-bottom: 0;
+            }
+
+            .main-area {
+                flex-direction: column;
+                gap: 16px;
+                padding-top: 16px;
+            }
+
+            .todo-module,
+            .summary-module {
+                flex: none;
+                transform: none;
+                margin-top: 0;
+            }
+
+            .todo-section {
+                padding: 30px;
+                min-height: 400px;
+            }
+
+            .summary-card {
+                min-height: 300px;
+            }
+
+            .filter-buttons {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .add-form {
+                flex-direction: column;
+            }
+
+            .add-btn {
+                width: 100%;
+            }
+
+            .archive-notification {
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="spinning-ring" id="spinningRing">
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-content">
+                <div class="sidebar-title">POST</div>
+                <div class="sidebar-subtitle">POST</div>
+                <div class="sidebar-pagination" id="sidebarPagination">
+                </div>
+            </div>
+        </div>
+
+        <div class="main-area">
+            <div class="todo-module">
+                <div class="todo-section">
+                    <header>
+                        <h1>📋 待办日志</h1>
+                    </header>
+
+                    <form class="add-form" onsubmit="addTodo(event)">
+                        <input type="text" id="todoInput" placeholder="需要做什么..." required>
+                        <button type="submit" class="add-btn">添加</button>
+                    </form>
+
+                    <div class="filter-container">
+                        <div class="filter-buttons">
+                            <button class="filter-btn active" onclick="filterTodos('all')">全部</button>
+                            <button class="filter-btn" onclick="filterTodos('active')">未完成</button>
+                            <button class="filter-btn" onclick="filterTodos('completed')">已归档</button>
+                        </div>
+                        <button class="clear-all-btn" onclick="confirmClearAll()">一键清空</button>
+                    </div>
+
+                    <div class="todo-list" id="todoList">
+                        <div class="empty-state">
+                            <div class="icon">📝</div>
+                            <p>日志为空。<br>开始添加任务来组织你的一天。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-column">
+                <div class="summary-module">
+                    <div class="summary-card">
+                        <div class="date-display">
+                            <h3 id="currentDate">Oct, 24, 2024</h3>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="label">总任务</span>
+                            <span class="value" id="totalCount">0</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="label">已完成</span>
+                            <div class="progress-bar">
+                                <div class="progress" id="progressBar" style="width: 0%"></div>
+                            </div>
+                            <span class="value" id="completedCount">0</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="label">未完成</span>
+                            <span class="value" id="pendingCount">0</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="label">完成率</span>
+                            <span class="value" id="completionRate">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quote-module">
+                    <div class="daily-quote">
+                        <div class="quote-sticky">
+                            <div class="quote-label">每日一语</div>
+                            <div class="quote-content" id="dailyQuote">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="archive-notification" id="archiveNotification">
+        <div class="archive-message">任务即将归档...</div>
+        <div class="archive-progress">
+            <div class="archive-progress-bar" id="archiveProgressBar"></div>
+        </div>
+        <div class="archive-actions">
+            <button class="undo-btn" onclick="undoArchive()">撤销</button>
+        </div>
+    </div>
+
+    <script>
+        let todos = [];
+        let filteredTodos = [];
+        let currentFilter = 'all';
+        let lastCompletedTodo = null;
+        let notificationTimeout = null;
+        let currentPage = 1;
+        let itemsPerPage = 5;
+
+        function loadTodos() {
+            const data = localStorage.getItem('todos');
+            todos = data ? JSON.parse(data) : [];
+            filteredTodos = [...todos];
+        }
+
+        function saveTodos() {
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+
+        function formatDate() {
+            const now = new Date();
+            const options = {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            };
+            return now.toLocaleDateString('en-US', options);
+        }
+
+        function updateDate() {
+            document.getElementById('currentDate').textContent = formatDate();
+        }
+
+        function updateStats() {
+            const totalCount = todos.length;
+            const completedCount = todos.filter(t => t.completed).length;
+            const pendingCount = totalCount - completedCount;
+            const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+            document.getElementById('totalCount').textContent = totalCount;
+            document.getElementById('completedCount').textContent = completedCount;
+            document.getElementById('pendingCount').textContent = pendingCount;
+            document.getElementById('completionRate').textContent = `${completionRate}%`;
+            document.getElementById('progressBar').style.width = `${completionRate}%`;
+        }
+
+        function filterTodos(filter) {
+            currentFilter = filter;
+            currentPage = 1;
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent === (filter === 'all' ? '全部' : filter === 'active' ? '未完成' : '已归档'));
+            });
+
+            if (filter === 'all') {
+                filteredTodos = [...todos];
+            } else if (filter === 'active') {
+                filteredTodos = todos.filter(t => !t.completed);
+            } else if (filter === 'completed') {
+                filteredTodos = todos.filter(t => t.completed);
+            }
+
+            renderTodos();
+        }
+
+        function renderTodos() {
+            const list = document.getElementById('todoList');
+
+            if (filteredTodos.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📝</div>
+                        <p>暂无任务。<br>开始添加任务来组织你的一天。</p>
+                    </div>
+                `;
+                renderPagination();
+                return;
+            }
+
+            const sortedTodos = [...filteredTodos].sort((a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+                const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+                return dateB - dateA;
+            });
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedTodos = sortedTodos.slice(startIndex, endIndex);
+
+            list.innerHTML = paginatedTodos.map((todo, index) => {
+                const todoIndex = todos.indexOf(todo);
+                return `
+                    <div class="todo-item">
+                        <div class="todo-checkbox ${todo.completed ? 'checked' : ''}" onclick="toggleTodo(${todoIndex})"></div>
+                        <div class="todo-content ${todo.completed ? 'completed' : ''}" onclick="toggleTodo(${todoIndex})">${todo.text}</div>
+                        <button class="delete-btn" onclick="deleteTodo(${todoIndex})">×</button>
+                    </div>
+                `;
+            }).join('');
+
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const pagination = document.getElementById('sidebarPagination');
+            const totalPages = Math.ceil(filteredTodos.length / itemsPerPage);
+
+            let paginationHTML = '';
+
+            if (totalPages >= 1) {
+                if (totalPages <= 5) {
+                    for (let i = 1; i <= totalPages; i++) {
+                        paginationHTML += `
+                            <button class="sidebar-page-btn ${currentPage === i ? 'active' : ''}" onclick="goToPage(${i})">
+                                ${i}
+                            </button>
+                        `;
+                    }
+                } else {
+                    if (currentPage <= 3) {
+                        for (let i = 1; i <= 5; i++) {
+                            paginationHTML += `
+                                <button class="sidebar-page-btn ${currentPage === i ? 'active' : ''}" onclick="goToPage(${i})">
+                                    ${i}
+                                </button>
+                            `;
+                        }
+                        paginationHTML += `
+                            <button class="sidebar-page-btn ellipsis">
+                                ...
+                            </button>
+                            <button class="sidebar-page-btn" onclick="goToPage(${totalPages})">
+                                ${totalPages}
+                            </button>
+                        `;
+                    } else if (currentPage >= totalPages - 2) {
+                        paginationHTML += `
+                            <button class="sidebar-page-btn" onclick="goToPage(1)">
+                                1
+                            </button>
+                            <button class="sidebar-page-btn ellipsis">
+                                ...
+                            </button>
+                        `;
+                        for (let i = totalPages - 4; i <= totalPages; i++) {
+                            paginationHTML += `
+                                <button class="sidebar-page-btn ${currentPage === i ? 'active' : ''}" onclick="goToPage(${i})">
+                                    ${i}
+                                </button>
+                            `;
+                        }
+                    } else {
+                        paginationHTML += `
+                            <button class="sidebar-page-btn" onclick="goToPage(1)">
+                                1
+                            </button>
+                            <button class="sidebar-page-btn ellipsis">
+                                ...
+                            </button>
+                        `;
+                        for (let i = currentPage - 2; i <= currentPage + 2; i++) {
+                            paginationHTML += `
+                                <button class="sidebar-page-btn ${currentPage === i ? 'active' : ''}" onclick="goToPage(${i})">
+                                    ${i}
+                                </button>
+                            `;
+                        }
+                        paginationHTML += `
+                            <button class="sidebar-page-btn ellipsis">
+                                ...
+                            </button>
+                            <button class="sidebar-page-btn" onclick="goToPage(${totalPages})">
+                                ${totalPages}
+                            </button>
+                        `;
+                    }
+                }
+            }
+
+            pagination.innerHTML = paginationHTML;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderTodos();
+        }
+
+        function confirmClearAll() {
+            if (confirm('确定要清空所有任务吗？')) {
+                const secondaryConfirm = confirm('⚠️ 此操作将彻底删除所有任务，不可恢复！\n\n你确定要继续吗？');
+                if (secondaryConfirm) {
+                    todos = [];
+                    saveTodos();
+                    filterTodos(currentFilter);
+                    updateStats();
+                    alert('所有任务已清空');
+                }
+            }
+        }
+
+        function addTodo(event) {
+            event.preventDefault();
+
+            const input = document.getElementById('todoInput');
+            const text = input.value.trim();
+
+            if (text) {
+                const isDuplicate = todos.some(todo => todo.text.toLowerCase() === text.toLowerCase());
+
+                if (isDuplicate) {
+                    const confirmAdd = confirm('已有此待办事项，是否继续添加？');
+                    if (!confirmAdd) {
+                        input.value = '';
+                        return;
+                    }
+                }
+
+                todos.push({
+                    text: text,
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                });
+
+                saveTodos();
+                currentPage = 1;
+                filterTodos(currentFilter);
+                updateStats();
+                input.value = '';
+            }
+        }
+
+        function toggleTodo(index) {
+            const wasCompleted = todos[index].completed;
+            todos[index].completed = !todos[index].completed;
+
+            if (todos[index].completed) {
+                lastCompletedTodo = index;
+                showArchiveNotification();
+            } else if (wasCompleted) {
+                showUndoNotification();
+            }
+
+            saveTodos();
+            filterTodos(currentFilter);
+            updateStats();
+        }
+
+        function deleteTodo(index) {
+            const todoItem = document.querySelectorAll('.todo-item')[index];
+            if (!todoItem) return;
+
+            if (todoItem.querySelector('.delete-confirm')) {
+                return;
+            }
+
+            const deleteConfirm = document.createElement('div');
+            deleteConfirm.className = 'delete-confirm';
+            deleteConfirm.innerHTML = `
+                <button class="confirm-delete-btn">确认删除</button>
+                <button class="cancel-delete-btn">我再想想</button>
+            `;
+
+            const deleteBtn = todoItem.querySelector('.delete-btn');
+            if (!deleteBtn) return;
+
+            deleteBtn.style.display = 'none';
+
+            const rect = deleteBtn.getBoundingClientRect();
+            const todoRect = todoItem.getBoundingClientRect();
+
+            deleteConfirm.style.position = 'absolute';
+            deleteConfirm.style.right = (todoRect.right - rect.right + 10) + 'px';
+            deleteConfirm.style.top = (rect.top - todoRect.top) + 'px';
+            deleteConfirm.style.zIndex = '100';
+            deleteConfirm.style.whiteSpace = 'nowrap';
+
+            todoItem.style.position = 'relative';
+            todoItem.appendChild(deleteConfirm);
+
+            const confirmBtn = deleteConfirm.querySelector('.confirm-delete-btn');
+            const cancelBtn = deleteConfirm.querySelector('.cancel-delete-btn');
+
+            confirmBtn.addEventListener('click', function() {
+                confirmDelete(index);
+            });
+
+            cancelBtn.addEventListener('click', function() {
+                cancelDelete(deleteConfirm, deleteBtn);
+            });
+        }
+
+        function confirmDelete(index) {
+            todos.splice(index, 1);
+            saveTodos();
+            filterTodos(currentFilter);
+            updateStats();
+        }
+
+        function cancelDelete(deleteConfirm, deleteBtn) {
+            if (deleteConfirm && deleteBtn) {
+                deleteBtn.style.display = 'block';
+                deleteConfirm.remove();
+            }
+        }
+
+        let progressInterval = null;
+
+        function showArchiveNotification() {
+            const notification = document.getElementById('archiveNotification');
+            const progressBar = document.getElementById('archiveProgressBar');
+            const message = notification.querySelector('.archive-message');
+            const progress = notification.querySelector('.archive-progress');
+            const undoBtn = notification.querySelector('.undo-btn');
+
+            if (notificationTimeout) {
+                clearTimeout(notificationTimeout);
+            }
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+
+            message.textContent = '任务即将归档...';
+            message.style.color = '#333';
+            progress.style.display = 'block';
+            undoBtn.style.display = 'block';
+
+            notification.classList.add('active');
+            progressBar.style.width = '0%';
+
+            let progressValue = 0;
+            progressInterval = setInterval(() => {
+                progressValue += 2;
+                progressBar.style.width = `${progressValue}%`;
+
+                if (progressValue >= 100) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                    notificationTimeout = setTimeout(() => {
+                        notification.classList.remove('active');
+                    }, 500);
+                }
+            }, 100);
+        }
+
+        function undoArchive() {
+            if (lastCompletedTodo !== null) {
+                todos[lastCompletedTodo].completed = false;
+                saveTodos();
+                filterTodos(currentFilter);
+                updateStats();
+
+                const notification = document.getElementById('archiveNotification');
+                notification.classList.remove('active');
+                lastCompletedTodo = null;
+            }
+        }
+
+        function showUndoNotification() {
+            const notification = document.getElementById('archiveNotification');
+            const message = notification.querySelector('.archive-message');
+            const progress = notification.querySelector('.archive-progress');
+            const undoBtn = notification.querySelector('.undo-btn');
+
+            if (notificationTimeout) {
+                clearTimeout(notificationTimeout);
+            }
+
+            message.textContent = '撤销成功';
+            message.innerHTML = '<span style="color: red;">撤销</span>成功 <span class="checkmark">✓</span>';
+            message.style.color = '#333';
+            progress.style.display = 'none';
+            undoBtn.style.display = 'none';
+
+            const checkmark = message.querySelector('.checkmark');
+            checkmark.style.display = 'inline-block';
+            checkmark.style.fontSize = '18px';
+            checkmark.style.marginLeft = '8px';
+            checkmark.style.animation = 'checkmark 0.6s ease-in-out';
+
+            notification.classList.add('active');
+
+            notificationTimeout = setTimeout(() => {
+                notification.classList.remove('active');
+                setTimeout(() => {
+                    message.textContent = '任务即将归档...';
+                    message.style.color = '#333';
+                    progress.style.display = 'block';
+                    undoBtn.style.display = 'block';
+                }, 300);
+            }, 2000);
+        }
+
+        function generateDailyQuote() {
+            const quotes = [
+                "天道酬勤，地道酬善",
+                "人道酬诚，商道酬信",
+                "业精于勤，荒于嬉",
+                "行成于思，毁于随",
+                "海纳百川，有容乃大",
+                "壁立千仞，无欲则刚",
+                "水滴石穿，非一日功",
+                "绳锯木断，非一日力",
+                "山重水复，柳暗花明",
+                "精诚所至，金石为开",
+                "言必信，行必果",
+                "满招损，谦受益",
+                "学无止境，艺无止境",
+                "百尺竿头，更进一步",
+                "千里之行，始于足下",
+                "锲而不舍，金石可镂",
+                "天下兴亡，匹夫有责",
+                "生于忧患，死于安乐",
+                "得道多助，失道寡助",
+                "宁为玉碎，不为瓦全"
+            ];
+
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            document.getElementById('dailyQuote').textContent = quotes[randomIndex];
+        }
+
+        function createCharacterRing() {
+            const ring = document.getElementById('spinningRing');
+            const text = 'PENDING TASKS PENDING TASKS';
+            const radius = 80;
+            const centerX = 90;
+            const centerY = 90;
+
+            ring.innerHTML = '';
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const angle = (i / text.length) * Math.PI * 2;
+
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+
+                const charElement = document.createElement('div');
+                charElement.className = 'ring-char';
+                charElement.textContent = char;
+
+                charElement.style.left = x + 'px';
+                charElement.style.top = y + 'px';
+                charElement.style.transform = `translate(-50%, -50%) rotate(${angle + Math.PI/2}rad)`;
+
+                ring.appendChild(charElement);
+            }
+        }
+
+        updateDate();
+        loadTodos();
+        filterTodos('all');
+        updateStats();
+        generateDailyQuote();
+        createCharacterRing();
+    </script>
+</body>
+</html>
