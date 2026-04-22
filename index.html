@@ -535,7 +535,25 @@
             position: relative;
             max-height: 400px;
             overflow-y: auto;
-            transition: all 0.3s ease;
+        }
+        
+        .todo-list.page-fade-out {
+            opacity: 0;
+            transform: translateY(-5px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        
+        .todo-list.page-fade-in {
+            opacity: 0;
+            transform: translateY(5px);
+            animation: fadeIn 0.2s ease forwards;
+        }
+        
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .todo-item {
@@ -1137,25 +1155,23 @@
         function goToPage(page) {
             const todoList = document.getElementById('todoList');
             
-            // 添加淡出动画
-            todoList.style.opacity = '0';
-            todoList.style.transform = 'translateY(-5px)';
+            // 添加淡出类
+            todoList.classList.add('page-fade-out');
             
             // 等待动画完成后切换页面内容
             setTimeout(() => {
                 currentPage = page;
                 renderTodos();
                 
-                // 重置新内容的初始状态
-                todoList.style.opacity = '0';
-                todoList.style.transform = 'translateY(5px)';
+                // 移除淡出类，添加淡入类
+                todoList.classList.remove('page-fade-out');
+                todoList.classList.add('page-fade-in');
                 
-                // 触发动画显示新内容
-                requestAnimationFrame(() => {
-                    todoList.style.opacity = '1';
-                    todoList.style.transform = 'translateY(0)';
-                });
-            }, 150);
+                // 动画完成后移除淡入类
+                setTimeout(() => {
+                    todoList.classList.remove('page-fade-in');
+                }, 200);
+            }, 200);
         }
 
         function confirmClearAll() {
